@@ -16,7 +16,7 @@ def analyse(scan_id):
 
 @shared_task(name="sweep")
 def sweep_check():
-    request_qs = RequestData.objects.filter(is_scan_started=True)
+    request_qs = RequestData.objects.filter(is_scan_started=True, is_scan_completed=False)
     if request_qs.exists():
         if request_qs.count() < max_count:
             request_scheduled_qs = RequestData.objects.filter(is_scan_scheduled=True)
