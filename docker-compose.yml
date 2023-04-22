@@ -1,0 +1,31 @@
+version: '3'
+
+services:
+  db:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=wsa
+      - MYSQL_USER=wsa
+      - MYSQL_PASSWORD=wsa
+      - MYSQL_ROOT_PASSWORD=wsa
+    volumes:
+      - /tmp/app/mysqld:/var/run/mysqld
+      - mysql-data:/var/lib/mysql
+  app:
+    build:
+      context: .
+    ports:
+      - "5050:5050"
+    volumes:
+      - .:/app
+      - /tmp/app/mysqld:/run/mysqld
+    depends_on:
+          - db
+          - redis
+  redis:
+    image: redis:alpine
+volumes:
+  mysql-data:
+    driver: local
