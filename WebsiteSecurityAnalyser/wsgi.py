@@ -1,5 +1,5 @@
 """
-WSGI config for WebsiteSecurityAnalyser project.
+WSGI config for CasinoRollServer project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

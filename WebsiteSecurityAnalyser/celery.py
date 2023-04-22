@@ -13,11 +13,11 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'WebsiteSecurityAnalyser.setting
 app = Celery('WebsiteSecurityAnalyser', include=[])
 
 app.conf.beat_schedule = {
-    # 'initial_sweep': {
-    #     'task': 'sweep',
-    #     'schedule': 5,
-    #     'relative': True
-    # }
+    'initial_sweep': {
+        'task': 'sweep',
+        'schedule': 5,
+        'relative': True
+    }
 }
 
 CELERY_TIMEZONE = 'Asia/Kolkata'
