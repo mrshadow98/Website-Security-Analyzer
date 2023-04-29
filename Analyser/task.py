@@ -5,6 +5,7 @@ from celery import shared_task
 
 from Analyser.analyser import Analyser, AnalyserOutputEncoder
 from Analyser.models import RequestData, Result
+from WebsiteSecurityAnalyser import settings
 
 max_count = 4
 
@@ -16,7 +17,7 @@ def analyse(scan_id):
     scan.is_scan_started = True
     scan.save()
     t1 = datetime.datetime.now()
-    analyser = Analyser(scan.url)
+    analyser = Analyser(scan.url, settings.VIRUS_TOTAL_KEY, settings.GOOGLE_SAFE_BROWSING_KEY)
     t2 = datetime.datetime.now()
     scan.result_calculation_percentage = 10
     scan.save()

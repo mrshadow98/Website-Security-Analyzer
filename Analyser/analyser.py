@@ -94,7 +94,10 @@ def check_if_has_ssl(url):
 
 
 class Analyser:
-    def __init__(self, url):
+    def __init__(self, url, virus_total_token, google_safe_browsing_key):
+        self.virus_total_token = virus_total_token
+        self.google_safe_browsing_key = google_safe_browsing_key
+
         self.url = url
         # Make a GET request to the URL
         self.response = requests.get(self.url, timeout=3, allow_redirects=True)
@@ -102,7 +105,7 @@ class Analyser:
         # Parse the HTML content of the response using BeautifulSoup
         self.soup = BeautifulSoup(self.response.content, 'html.parser')
         try:
-            self.google_safe_browsing = compare_with_google(self.url, "AIzaSyCcYzRZroIZoq2qdW3tpiSZ3oTDFiRto4U")
+            self.google_safe_browsing = compare_with_google(self.url, self.google_safe_browsing_key)
         except:
             self.google_safe_browsing = {url: {"malicious": False}}
 
@@ -646,7 +649,7 @@ class Analyser:
 
     def get_site_reputation(self):
         endpoint = 'https://www.virustotal.com/api/v3/urls/'
-        headers = {'x-apikey': "3b19a36f8cd10e8c28b201d6bf618b2c999f4dd5534fa5645aaa34dc54f22cfd"}
+        headers = {'x-apikey': self.virus_total_token}
         params = {'url': self.url}
         response = requests.get(endpoint, headers=headers, params=params)
         if response.status_code == 200:
@@ -836,6 +839,7 @@ def complete_output():
     print(f'get_common_analysis: {(t5 - t4).total_seconds() / total_time * 100:.2f}%')
     print(f'get_technology_and_dns_analysis: {(t6 - t5).total_seconds() / total_time * 100:.2f}%')
     return output
+
 
 class AnalyserOutputEncoder(json.JSONEncoder):
     def default(self, obj):
