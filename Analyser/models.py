@@ -17,8 +17,8 @@ class Result(models.Model):
 class RequestData(models.Model):
     url = models.CharField(max_length=255)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    result_calculation_seconds = models.IntegerField(default=30)
-    result_calculation_percentage = models.IntegerField(default=30)
+    result_calculation_seconds = models.IntegerField(default=70)
+    result_calculation_percentage = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     is_scan_started = models.BooleanField(default=False)
     is_scan_scheduled = models.BooleanField(default=True)

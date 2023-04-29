@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.shortcuts import render
 
 # Create your views here.
@@ -14,6 +16,12 @@ from Analyser.serializers import RequestDataSerializer
 def scan_url(request):
     if request.method == 'GET':
         url = request.GET.get("url")
+        try:
+            parsed_url = urlparse(url)
+            if not parsed_url.scheme or parsed_url.scheme not in ['http', 'https']:
+                return Response({"error": True, "message": "No valid url"}, status=400)
+        except Exception as e:
+            return Response({"error": True, "message": "No valid url"}, status=400)
         request_data = RequestData(url=url, user=request.user)
         request_data.save()
         serializer = RequestDataSerializer(request_data)
