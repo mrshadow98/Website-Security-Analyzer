@@ -1,10 +1,8 @@
-import asyncio
 import json
 import re
 import socket
 import ssl
 import string
-import traceback
 import urllib.parse
 from urllib.error import URLError
 from urllib.parse import urlparse
@@ -15,16 +13,25 @@ from bs4 import BeautifulSoup
 from dgaintel import get_prob
 import dns.resolver
 from ipwhois import IPWhois
-
-from PhishingDetection import phishing_detection
 from Wappalyzer import Wappalyzer, WebPage
 import whois
 import datetime
 import geoip2.database
-from PhishingDetection.phishing_detection import compare_with_google
+from pysafebrowsing import SafeBrowsing
+from googlesearch import search
 from jarm.scanner.scanner import Scanner
 
+from WebsiteSecurityAnalyser import settings
+
 geoip2_reader = geoip2.database.Reader('GeoLite2-Country.mmdb')
+
+
+def compare_with_google(url, api):
+    s = SafeBrowsing(api)
+    urls = []
+    urls.append(url)
+    r = s.lookup_urls(urls)
+    return r
 
 
 def get_ip(url):
@@ -156,10 +163,6 @@ class Analyser:
         except idna.IDNAError:
             return False
 
-    def probability_of_phishing(self):
-        value = phishing_detection.detect(self.url)
-        return value
-
     def is_url_with_ip(self):
         # Regular expression pattern to match IP address
         ip_pattern = r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
@@ -176,8 +179,7 @@ class Analyser:
     def get_summery(self):
         return {"URL with IP": self.is_url_with_ip(), "Suspicious Length": self.is_suspicious_length(50),
                 "DGA Score": self.get_dga_score(), "URL with @": self.detect_at_symbol(),
-                "URL with Multiple http": self.detect_multiple_http(), "URL with PunyCode": self.detect_punycode(),
-                "Probability of Phishing URL": self.probability_of_phishing()}
+                "URL with Multiple http": self.detect_multiple_http(), "URL with PunyCode": self.detect_punycode()}
 
     # html related
     def find_hidden_elements(self):
@@ -815,13 +817,55 @@ class Analyser:
             'website_title': self.get_website_title(), 'jarm_hash': self.get_jarm_hash(),
             'whois': self.whois
         }
+
+    # page ranks and subdomains
+    def google_index(self):
+        try:
+            site = search(self.url, num=1)
+            if site:
+                data = []
+                for s in site:
+                    data.append(s)
+                return {'present_on_google': True, 'site': data}
+            else:
+                return {'present_on_google': False, 'site': None}
+        except:
+            return {'present_on_google': "Unknown", 'site': []}
+
+
+def calculate_probability_of_phishing(summery, html):
+    weights = {
+        "Suspicious Length": 0.1,
+        "URL with @": 0.2,
+        "URL with Multiple http": 0.1,
+        "URL with PunyCode": 0.3,
+        "Hidden Element": 0.05,
+        "Hidden Iframe": 0.05,
+        "Iframe": 0.1,
+        "Suspicious HTML Element": 0.1
+    }
+    score = 0
+    count = 0
+    for key, weight in weights.items():
+        if count < 4:
+            if summery[key]:
+                score += weight
+        else:
+            if html[key]["count"] > 0:
+                score += weight
+        count += 1
+    return score
+
+
 def complete_output():
     t1 = datetime.datetime.now()
-    analyser = Analyser('https://geniobits.com')
+    analyser = Analyser('https://geniobits.com', settings.VIRUS_TOTAL_KEY, settings.GOOGLE_SAFE_BROWSING_KEY)
     t2 = datetime.datetime.now()
     summery = analyser.get_summery()
     t3 = datetime.datetime.now()
     html = analyser.get_html_analysis()
+    pp = calculate_probability_of_phishing(summery, html)
+    summery["Probability of Phishing"] = pp
     t4 = datetime.datetime.now()
     common = analyser.get_common_analysis()
     t5 = datetime.datetime.now()
@@ -829,7 +873,8 @@ def complete_output():
     t6 = datetime.datetime.now()
     total_time = (t6 - t1).total_seconds()
     output = {
-        'summery': summery, 'html': html, 'common': common, 'tandd': tandd, 'total_time': total_time
+        'summery': summery, 'html': html, 'common': common, 'tandd': tandd,
+        'total_time': total_time
     }
     print(output)
     print(f'Total time taken: {total_time} seconds\n')
@@ -850,6 +895,7 @@ class AnalyserOutputEncoder(json.JSONEncoder):
         if isinstance(obj, datetime.datetime):
             return obj.strftime('%Y-%m-%d %H:%M:%S')
         return json.JSONEncoder.default(self, obj)
+
 
 # o = complete_output()
 #

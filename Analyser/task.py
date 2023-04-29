@@ -3,7 +3,7 @@ import json
 
 from celery import shared_task
 
-from Analyser.analyser import Analyser, AnalyserOutputEncoder
+from Analyser.analyser import Analyser, AnalyserOutputEncoder, calculate_probability_of_phishing
 from Analyser.models import RequestData, Result
 from WebsiteSecurityAnalyser import settings
 
@@ -23,23 +23,28 @@ def analyse(scan_id):
     scan.save()
     summery = analyser.get_summery()
     t3 = datetime.datetime.now()
-    scan.result_calculation_percentage = 14
+    scan.result_calculation_percentage = 12
     scan.save()
     html = analyser.get_html_analysis()
+    pp = calculate_probability_of_phishing(summery, html)
+    summery["Probability of Phishing"] = pp
     t4 = datetime.datetime.now()
-    scan.result_calculation_percentage = 29
+    scan.result_calculation_percentage = 40
     scan.save()
     common = analyser.get_common_analysis()
     t5 = datetime.datetime.now()
-    scan.result_calculation_percentage = 33
+    scan.result_calculation_percentage = 55
     scan.save()
     tandd = analyser.get_technology_and_dns_analysis()
     t6 = datetime.datetime.now()
+    scan.result_calculation_percentage = 70
+    scan.save()
     scan.result_calculation_percentage = 100
     scan.save()
     total_time = (t6 - t1).total_seconds()
     output = {
-        'summery': summery, 'html': html, 'common': common, 'tandd': tandd, 'total_time': total_time
+        'summery': summery, 'html': html, 'common': common, 'tandd': tandd,
+        'total_time': total_time
     }
     print(output)
     print(f'Total time taken: {total_time} seconds\n')
