@@ -1,8 +1,9 @@
 import datetime
+import json
 
 from celery import shared_task
 
-from Analyser.analyser import Analyser
+from Analyser.analyser import Analyser, AnalyserOutputEncoder
 from Analyser.models import RequestData, Result
 
 max_count = 4
@@ -46,7 +47,8 @@ def analyse(scan_id):
     print(f'get_html_analysis: {(t4 - t3).total_seconds() / total_time * 100:.2f}%')
     print(f'get_common_analysis: {(t5 - t4).total_seconds() / total_time * 100:.2f}%')
     print(f'get_technology_and_dns_analysis: {(t6 - t5).total_seconds() / total_time * 100:.2f}%')
-    res = Result(url=scan.url, data=output)
+    output_json = json.dumps(output, cls=AnalyserOutputEncoder)
+    res = Result(url=scan.url, data=output_json)
     res.save()
     scan.result = res
     scan.is_scan_completed = True

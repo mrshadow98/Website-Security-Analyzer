@@ -53,8 +53,7 @@ def diff_month(d1, d2):
 
 # Generate data set by extracting the features from the URL
 def generate_data_set(url):
-    data_set = []
-
+    data_set = [-1]
     # Converts the given URL into standard format
     if not re.match(r"^https?", url):
         url = "http://" + url

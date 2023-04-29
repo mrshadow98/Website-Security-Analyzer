@@ -9,10 +9,13 @@ import urllib.parse
 from urllib.error import URLError
 from urllib.parse import urlparse
 import idna
+import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from dgaintel import get_prob
 import dns.resolver
+from ipwhois import IPWhois
+
 from PhishingDetection import phishing_detection
 from Wappalyzer import Wappalyzer, WebPage
 import whois
@@ -737,14 +740,18 @@ class Analyser:
                     ip_address = None
                 location = None
                 url_asn = None
+                as_number = None
                 if ip_address:
                     location = self.find_domain_location(ip=ip_address)
                     try:
-                        url_asn = whois.whois(ip_address).asn
+                        ipwhois = IPWhois(ip_address)
+                        results = ipwhois.lookup_rdap()
+                        as_number = results["asn"]
+                        url_asn = results["asn_description"]
                     except Exception as e:
                         print(e)
                 link_details.append({"host": host, "link": link, "ip": ip_address, "location": location,
-                                     "asn": url_asn})
+                                     "as_name": url_asn, "as_number": as_number})
             else:
                 exist_host["link"] = link
                 link_details.append(exist_host)
@@ -805,4 +812,43 @@ class Analyser:
             'website_title': self.get_website_title(), 'jarm_hash': self.get_jarm_hash(),
             'whois': self.whois
         }
+def complete_output():
+    t1 = datetime.datetime.now()
+    analyser = Analyser('https://geniobits.com')
+    t2 = datetime.datetime.now()
+    summery = analyser.get_summery()
+    t3 = datetime.datetime.now()
+    html = analyser.get_html_analysis()
+    t4 = datetime.datetime.now()
+    common = analyser.get_common_analysis()
+    t5 = datetime.datetime.now()
+    tandd = analyser.get_technology_and_dns_analysis()
+    t6 = datetime.datetime.now()
+    total_time = (t6 - t1).total_seconds()
+    output = {
+        'summery': summery, 'html': html, 'common': common, 'tandd': tandd, 'total_time': total_time
+    }
+    print(output)
+    print(f'Total time taken: {total_time} seconds\n')
+    print(f'Percentage of time taken by each function:\n')
+    print(f'get_summery: {(t3 - t2).total_seconds() / total_time * 100:.2f}%')
+    print(f'get_html_analysis: {(t4 - t3).total_seconds() / total_time * 100:.2f}%')
+    print(f'get_common_analysis: {(t5 - t4).total_seconds() / total_time * 100:.2f}%')
+    print(f'get_technology_and_dns_analysis: {(t6 - t5).total_seconds() / total_time * 100:.2f}%')
+    return output
 
+class AnalyserOutputEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, bytes):
+            return obj.decode()
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        return json.JSONEncoder.default(self, obj)
+
+# o = complete_output()
+#
+# with open("output.json", "w") as f:
+#     # Write the JSON data to the file using the "json.dump()" method
+#     json.dump(o, f, cls=AnalyserOutputEncoder, indent=4)
