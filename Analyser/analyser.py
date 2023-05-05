@@ -1,15 +1,19 @@
+import argparse
 import json
+import random
 import re
 import socket
 import ssl
 import string
+import sys
 import urllib.parse
+from http.cookiejar import Cookie
 from urllib.error import URLError
 from urllib.parse import urlparse
 import idna
 import numpy as np
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from dgaintel import get_prob
 import dns.resolver
 from ipwhois import IPWhois
@@ -20,8 +24,6 @@ import geoip2.database
 from pysafebrowsing import SafeBrowsing
 from googlesearch import search
 from jarm.scanner.scanner import Scanner
-
-from WebsiteSecurityAnalyser import settings
 
 geoip2_reader = geoip2.database.Reader('GeoLite2-Country.mmdb')
 
@@ -570,10 +572,13 @@ class Analyser:
         except:
             url = "https://ipinfo.io/" + ip + "/json"
             response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                return data.get("city") + "-" + data.get("region") + "-" + data.get("country")
-            else:
+            try:
+                if response.status_code == 200:
+                    data = response.json()
+                    return data.get("city") + "-" + data.get("region") + "-" + data.get("country")
+                else:
+                    return ""
+            except:
                 return ""
 
     def is_newborn_domain(self):
@@ -585,10 +590,13 @@ class Analyser:
             creation_date = domain_info.creation_date[0]
         else:
             creation_date = domain_info.creation_date
-        days_since_creation = (datetime.datetime.now() - creation_date).days
-        if days_since_creation < 30:
-            return True
-        else:
+        try:
+            days_since_creation = (datetime.datetime.now() - creation_date).days
+            if days_since_creation < 30:
+                return True
+            else:
+                return False
+        except:
             return False
 
     def check_abuse_record(self):
@@ -724,9 +732,14 @@ class Analyser:
     def get_links_and_ips(self):
         # Get all the links present on the webpage
         links = []
-        for link in self.soup.find_all('a'):
-            if link.get('href') not in links and link.get('href') != "#" and 'mailto' not in link.get('href'):
-                links.append(link.get('href'))
+        asas = self.soup.find_all('a')
+        if asas:
+            for link in asas:
+                try:
+                    if link.get('href') not in links and link.get('href') != "#" and 'mailto' not in link.get('href'):
+                        links.append(link.get('href'))
+                except:
+                    pass
         # Get all the IP addresses present on the webpage
         link_details = []
         for link in links:
@@ -773,17 +786,17 @@ class Analyser:
         # Iterate over the cookies
         for cookie in cookies:
             # Check if the cookie is an HTTP-only cookie
-            if cookie.get('httponly', False):
+            if cookie.has_nonstandard_attr("httponly"):
                 suspicious_cookies.append(cookie)
 
             # Check if the cookie has a secure flag but the request was made over HTTP
-            if cookie.get('secure', False) and not self.response.url.startswith('https'):
+            if cookie.secure and not self.response.url.startswith('https'):
                 suspicious_cookies.append(cookie)
 
             # Check if the cookie has an expiration date set far in the future
-            if cookie.get('expires', False):
+            if cookie.expires:
                 # Convert the expiration date to a datetime object
-                expiration_date = datetime.datetime.strptime(cookie['expires'], '%a, %d-%b-%Y %H:%M:%S %Z')
+                expiration_date = datetime.datetime.fromtimestamp(cookie.expires)
 
                 # Calculate the number of days until the cookie expires
                 days_until_expiration = (expiration_date - datetime.datetime.now()).days
@@ -857,9 +870,31 @@ def calculate_probability_of_phishing(summery, html):
     return score
 
 
-def complete_output():
+class AnalyserOutputEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, bytes):
+            return obj.decode()
+        if isinstance(obj, datetime.datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        if isinstance(obj, Tag):
+            return str(obj)
+        if isinstance(obj, Cookie):
+            return {
+                'name': obj.name,
+                'value': obj.value,
+                'domain': obj.domain,
+                'path': obj.path,
+                'expires': obj.expires,
+                'secure': obj.secure
+            }
+        return json.JSONEncoder.default(self, obj)
+
+
+def complete_output(url, VIRUS_TOTAL_KEY=None, GOOGLE_SAFE_BROWSING_KEY=None):
     t1 = datetime.datetime.now()
-    analyser = Analyser('https://geniobits.com', settings.VIRUS_TOTAL_KEY, settings.GOOGLE_SAFE_BROWSING_KEY)
+    analyser = Analyser(url, VIRUS_TOTAL_KEY, GOOGLE_SAFE_BROWSING_KEY)
     t2 = datetime.datetime.now()
     summery = analyser.get_summery()
     t3 = datetime.datetime.now()
@@ -886,19 +921,78 @@ def complete_output():
     return output
 
 
-class AnalyserOutputEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, bytes):
-            return obj.decode()
-        if isinstance(obj, datetime.datetime):
-            return obj.strftime('%Y-%m-%d %H:%M:%S')
-        return json.JSONEncoder.default(self, obj)
+def parse_args():
+    parser = argparse.ArgumentParser(description='Url Analyser help.')
+    parser.add_argument('-url', help='URL to fetch data from')
+    parser.add_argument('-file', help='local file to load data from')
+    parser.add_argument('-vtk', help='Virus Total Key')
+    parser.add_argument('-gsbk', help='Google safe browsing key')
+    parser.add_argument('-output_file', help='file to write output data to')
+    args = parser.parse_args()
+
+    if not any(vars(args).values()):
+        parser.print_help()
+        exit()
+
+    return vars(args)
 
 
-# o = complete_output()
-#
-# with open("output.json", "w") as f:
-#     # Write the JSON data to the file using the "json.dump()" method
-#     json.dump(o, f, cls=AnalyserOutputEncoder, indent=4)
+if __name__ == "__main__":
+    args = parse_args()
+    print('url', args.get("url"))
+    url = args.get("url")
+    if url:
+        parsed_url = urlparse(url)
+        if parsed_url.scheme or parsed_url.scheme in ['http', 'https']:
+            vtk = "3b19a36f8cd10e8c28b201d6bf618b2c999f4dd5534fa5645aaa34dc54f22cfd"
+            gk = "AIzaSyCcYzRZroIZoq2qdW3tpiSZ3oTDFiRto4U"
+            if args.get("vtk"):
+                vtk = args.get("vtk")
+            if args.get("gsbk"):
+                gk = args.get("gsbk")
+            o = complete_output(url)
+            filename = url.replace("https", "")
+            filename = filename.replace("http", "")
+            filename = filename.replace(":", "")
+            filename = filename.replace("/", "")
+            filename = filename.replace(".", "_")
+            filename = filename + "_output.json"
+            if args.get("output_file"):
+                filename = args.get("output_file")
+            with open(filename, "w") as f:
+                # Write the JSON data to the file using the "json.dump()" method
+                json.dump(o, f, cls=AnalyserOutputEncoder, indent=4)
+        else:
+            print("URL should be in http://example.com or https://example.com format")
+    elif args.get("file"):
+        with open(args.get("file"), "r") as file:
+            lines = file.readlines()
+            outs = []
+            for l in lines:
+                parsed_url = urlparse(l)
+                if parsed_url.scheme or parsed_url.scheme in ['http', 'https']:
+                    print("Processing: " + l)
+                    try:
+                        o = complete_output(l)
+                    except Exception as e:
+                        o = {"error": str(e)}
+                    filename = l.replace("https", "")
+                    filename = filename.replace("http", "")
+                    filename = filename.replace(":", "")
+                    filename = filename.replace("/", "")
+                    filename = filename.replace(".", "_")
+                    filename = filename.replace("\n", "")
+                    filename = filename.replace("\\", "")
+                    filename = filename.replace("?", "")
+                    filename = filename.replace("=", "")
+                    try:
+                        filename = filename + "_output.json"
+                        with open(filename, "w") as f:
+                            # Write the JSON data to the file using the "json.dump()" method
+                            json.dump(o, f, cls=AnalyserOutputEncoder, indent=4)
+                    except:
+                        filename = ''.join(random.choices(string.digits, k=10))
+                        filename = filename + "_output.json"
+                        with open(filename, "w") as f:
+                            # Write the JSON data to the file using the "json.dump()" method
+                            json.dump(o, f, cls=AnalyserOutputEncoder, indent=4)
