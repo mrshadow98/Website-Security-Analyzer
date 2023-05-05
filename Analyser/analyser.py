@@ -980,7 +980,7 @@ def complete_output(url, VIRUS_TOTAL_KEY=None, GOOGLE_SAFE_BROWSING_KEY=None):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Url Analyser help.')
-    parser.add_argument('-url', help='URL to fetch data from')
+    parser.add_argument('-url', help='URL to test')
     parser.add_argument('-file', help='local file to load data from')
     parser.add_argument('-vtk', help='Virus Total Key')
     parser.add_argument('-gsbk', help='Google safe browsing key')

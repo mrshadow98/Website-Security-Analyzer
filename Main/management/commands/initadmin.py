@@ -1,7 +1,6 @@
 from django.core.management import BaseCommand
 
 from Account.models import User
-from Payment.models import GlobalWallet
 
 
 class Command(BaseCommand):
@@ -17,6 +16,5 @@ class Command(BaseCommand):
             admin.is_admin = True
             admin.email = 'admin@gmail.com'
             admin.save()
-            GlobalWallet(amount=0).save()
         else:
             print('Admin accounts can only be initialized if no Accounts exist')
