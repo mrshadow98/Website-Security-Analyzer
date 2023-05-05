@@ -5,6 +5,7 @@ import re
 import socket
 import ssl
 import string
+import subprocess
 import sys
 import urllib.parse
 from http.cookiejar import Cookie
@@ -94,12 +95,12 @@ def check_if_has_ssl(url):
                 cert_hostname = cert["subjectAltName"][0][1]
                 if cert_hostname != url.split("//")[1].split("/")[0]:
                     print("Error: Certificate does not match the domain name.")
-                    return False, None
+                    return {'is_valid': False, 'cert': cert, 'reason': 'Certificate does not match the domain name.'}
                 else:
-                    return True, cert
+                    return {'is_valid': True, 'cert': cert, 'reason': ''}
     except URLError as e:
         print("Error: " + str(e))
-        return False, None
+        return {'is_valid': False, 'cert': None, 'reason': str(e)}
 
 
 class Analyser:
@@ -500,6 +501,32 @@ class Analyser:
         except:
             return "Error"
 
+    def analyse_title(self):
+        title = self.get_website_title()
+        # Define regular expressions for matching social media and website names
+        social_media_regex = re.compile(r'(facebook|twitter|instagram|youtube|linkedin|pinterest|meta)', re.IGNORECASE)
+        website_name_regex = re.compile(r'(google|amazon|yahoo|wikipedia|ebay|reddit|github|stackoverflow|wordpress'
+                                        r'|blogspot)', re.IGNORECASE)
+        error_code_regex = re.compile(r'((page not found)|(404 error)|(server error))', re.IGNORECASE)
+
+        # Check if any of the social media keywords are present in the title
+        social_media_match = social_media_regex.search(title)
+        if social_media_match:
+            return {"social_media_name": True, "names": {social_media_match.group(0)}}
+
+        # Check if any of the website name keywords are present in the title
+        website_name_match = website_name_regex.search(title)
+        if website_name_match:
+            return {"known_website_name": True, "names": {website_name_match.group(0)}}
+
+        # Check if any of the error code keywords are present in the title
+        error_code_match = error_code_regex.search(title)
+        if error_code_match:
+            return {"error_code": True, "names": {error_code_match.group(0)}}
+
+        # If none of the keywords were found, return None
+        return None
+
     def get_html_analysis(self):
         return {"Hidden Element": self.find_hidden_elements(), "Hidden Iframe": self.find_hidden_iframes(),
                 "Iframe": self.find_iframes(), "Obfuscated Script": self.find_obfuscated_scripts(),
@@ -507,7 +534,7 @@ class Analyser:
                 "Suspicious Program": self.count_suspicious_programs(), "Button Trap": self.detect_button_trap(),
                 "Credential Input Form": self.check_credential_form(),
                 "Form Event": self.check_suspicious_submit_events(),
-                "Fake Favicon": self.check_fake_favicon()
+                "Fake Favicon": self.check_fake_favicon(), "Title Analysis": self.analyse_title()
                 }
 
     def check_domain_safety(self):
@@ -729,22 +756,27 @@ class Analyser:
 
         return {'redirect_asn': redirections, 'countries': countries}
 
-    def get_links_and_ips(self):
+    def get_links_and_ips(self, links=None):
         # Get all the links present on the webpage
-        links = []
-        asas = self.soup.find_all('a')
-        if asas:
-            for link in asas:
-                try:
-                    if link.get('href') not in links and link.get('href') != "#" and 'mailto' not in link.get('href'):
-                        links.append(link.get('href'))
-                except:
-                    pass
+        if links is None:
+            links = []
+            asas = self.soup.find_all('a')
+            if asas:
+                for link in asas:
+                    try:
+                        if link.get('href') not in links and link.get('href') != "#" and 'mailto' not in link.get('href'):
+                            links.append(link.get('href'))
+                    except:
+                        pass
         # Get all the IP addresses present on the webpage
         link_details = []
         for link in links:
+            if not link.startswith("https://") and not link.startswith("http://"):
+                link = "https://" + link
             parsed_url = urlparse(link)
             host = parsed_url.netloc.split(':')[0]
+            if host == "":
+                host = link
             exist_host = None
             for item in link_details:
                 if item['host'] == host:
@@ -768,13 +800,31 @@ class Analyser:
                         url_asn = results["asn_description"]
                     except Exception as e:
                         print(e)
+                response_code = 0
+                try:
+                    res = requests.get(link)
+                    response_code = res.status_code
+                except:
+                    pass
                 link_details.append({"host": host, "link": link, "ip": ip_address, "location": location,
-                                     "as_name": url_asn, "as_number": as_number})
+                                     "as_name": url_asn, "as_number": as_number, "response_code": response_code})
             else:
                 exist_host["link"] = link
                 link_details.append(exist_host)
         # Return the links and IPs as a tuple
         return link_details
+
+    def find_subdomains(self):
+        try:
+            parsed_url = urlparse(self.url)
+            host = parsed_url.netloc.split(':')[0]
+            output = subprocess.check_output(['subfinder', '-d', host])
+            subdomains = output.decode().split('\n')
+            subdomains = [s.strip() for s in subdomains if s.strip()]
+            subdomains = self.get_links_and_ips(links=subdomains)
+            return subdomains
+        except subprocess.CalledProcessError:
+            return []
 
     def find_suspicious_cookies(self):
         # Extract the cookies from the response
@@ -828,7 +878,8 @@ class Analyser:
             'redirection_to_another_as_country': self.find_redirection_to_another_as_country(),
             'links_and_ips': self.get_links_and_ips(), 'suspicious_cookies': self.find_suspicious_cookies(),
             'website_title': self.get_website_title(), 'jarm_hash': self.get_jarm_hash(),
-            'whois': self.whois
+            'whois': self.whois,
+            'subdomains': self.find_subdomains()
         }
 
     # page ranks and subdomains
@@ -851,21 +902,27 @@ def calculate_probability_of_phishing(summery, html):
         "Suspicious Length": 0.1,
         "URL with @": 0.2,
         "URL with Multiple http": 0.1,
-        "URL with PunyCode": 0.3,
+        "URL with PunyCode": 0.1,
         "Hidden Element": 0.05,
         "Hidden Iframe": 0.05,
         "Iframe": 0.1,
-        "Suspicious HTML Element": 0.1
+        "Suspicious HTML Element": 0.1,
+        "Social Media or Website": 0.2,
     }
+    title = html["Title Analysis"]
     score = 0
     count = 0
     for key, weight in weights.items():
         if count < 4:
             if summery[key]:
                 score += weight
-        else:
+        elif count < 8:
             if html[key]["count"] > 0:
                 score += weight
+        else:
+            if title:
+                if 'social_media_name' in title or 'known_website_name' in title:
+                    score += weight
         count += 1
     return score
 
