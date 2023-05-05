@@ -170,22 +170,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 DEFAULT_FROM_EMAIL = 'casinoroll@mails.geniobits.com'
 BASE_DOMAIN = "localhost"
 BASE_URL = "http://" + BASE_DOMAIN + "/"
-
-AWS_ACCESS_KEY_ID = 'GIFQMG2V54XBFNDPV5ZQ'
-AWS_SECRET_ACCESS_KEY = 'TPvVvJyoA1FsdW0AXHytvX89dxgOQdA4pFQ9fYlTirY'
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-AWS_STORAGE_BUCKET_NAME = 'geniobits-372ced2e-8bfe-40ad-b8d8-1fb2b06c044d'
-AWS_S3_ENDPOINT_URL = 'https://nyc3.digitaloceanspaces.com'
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
-S3_URL = "https://geniobits-372ced2e-8bfe-40ad-b8d8-1fb2b06c044d.nyc3.digitaloceanspaces.com"
-AWS_S3_CUSTOM_DOMAIN = 'geniobits-372ced2e-8bfe-40ad-b8d8-1fb2b06c044d.nyc3.cdn.digitaloceanspaces.com'
-STATIC_URL_CDN = "https://" + AWS_S3_CUSTOM_DOMAIN + "/static"
-# STATIC_URL_CDN = ""
-AWS_S3_FILE_OVERWRITE = False
-
-
 mimetypes.add_type("text/css", ".css", True)
 X_FRAME_OPTIONS = 'ALLOW-FROM http://localhost:3000/'
 
@@ -206,5 +190,3 @@ APP_NAME = "WSA"
 APP_SMS_HASH = "#123123"
 ADMIN_SITE_TITLE = "WSA Admin"
 ADMIN_SITE_HEADER = "WSA Admin"
-VIRUS_TOTAL_KEY = "3b19a36f8cd10e8c28b201d6bf618b2c999f4dd5534fa5645aaa34dc54f22cfd"
-GOOGLE_SAFE_BROWSING_KEY = "AIzaSyCcYzRZroIZoq2qdW3tpiSZ3oTDFiRto4U"

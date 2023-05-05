@@ -4,6 +4,21 @@ from django.db import models
 from Account.models import User
 
 
+class Keys(models.Model):
+    KEYS_NAME = [
+        ('GoogleSafeBrowsing', 'GoogleSafeBrowsing'),
+        ('VirusTotal', 'VirusTotal')
+    ]
+    name = models.CharField(max_length=255, choices=KEYS_NAME)
+    public_key = models.TextField(blank=True)
+    secret_key = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.name)
+
+
 class Result(models.Model):
     url = models.CharField(max_length=255)
     data = models.TextField()

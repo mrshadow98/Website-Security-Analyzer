@@ -1,6 +1,7 @@
 from django.core.management import BaseCommand
 
 from Account.models import User
+from Analyser.models import Keys
 
 
 class Command(BaseCommand):
@@ -16,5 +17,7 @@ class Command(BaseCommand):
             admin.is_admin = True
             admin.email = 'admin@gmail.com'
             admin.save()
+            Keys(name="GoogleSafeBrowsing").save()
+            Keys(name="VirusTotal").save()
         else:
             print('Admin accounts can only be initialized if no Accounts exist')

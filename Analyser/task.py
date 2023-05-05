@@ -4,20 +4,21 @@ import json
 from celery import shared_task
 
 from Analyser.analyser import Analyser, AnalyserOutputEncoder, calculate_probability_of_phishing
-from Analyser.models import RequestData, Result
-from WebsiteSecurityAnalyser import settings
+from Analyser.models import RequestData, Result, Keys
 
 max_count = 4
 
 
 @shared_task(name="analyse")
 def analyse(scan_id):
+    VIRUS_TOTAL_KEY = Keys.objects.get(name="VirusTotal")
+    GOOGLE_SAFE_BROWSING_KEY = Keys.objects.get(name="GoogleSafeBrowsing")
     scan = RequestData.objects.get(id=scan_id)
     scan.is_scan_scheduled = False
     scan.is_scan_started = True
     scan.save()
     t1 = datetime.datetime.now()
-    analyser = Analyser(scan.url, settings.VIRUS_TOTAL_KEY, settings.GOOGLE_SAFE_BROWSING_KEY)
+    analyser = Analyser(scan.url, VIRUS_TOTAL_KEY.public_key, GOOGLE_SAFE_BROWSING_KEY.public_key)
     t2 = datetime.datetime.now()
     scan.result_calculation_percentage = 10
     scan.save()
