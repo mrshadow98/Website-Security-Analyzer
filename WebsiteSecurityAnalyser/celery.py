@@ -14,7 +14,7 @@ app = Celery('WebsiteSecurityAnalyser', include=[])
 
 app.conf.beat_schedule = {
     'initial_sweep': {
-        'task': 'sweep',
+        'task': 'sweep_init',
         'schedule': 5,
         'relative': True
     }

@@ -38,7 +38,7 @@ class RequestData(models.Model):
     is_scan_started = models.BooleanField(default=False)
     is_scan_scheduled = models.BooleanField(default=True)
     is_scan_completed = models.BooleanField(default=False)
-    result = models.ForeignKey(Result, on_delete=models.CASCADE)
+    result = models.ForeignKey(Result, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

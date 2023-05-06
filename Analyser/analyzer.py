@@ -6,7 +6,6 @@ import socket
 import ssl
 import string
 import subprocess
-import sys
 import urllib.parse
 from http.cookiejar import Cookie
 from urllib.error import URLError
@@ -15,7 +14,6 @@ import idna
 import numpy as np
 import requests
 from bs4 import BeautifulSoup, Tag
-from dgaintel import get_prob
 import dns.resolver
 from ipwhois import IPWhois
 from Wappalyzer import Wappalyzer, WebPage
@@ -103,7 +101,7 @@ def check_if_has_ssl(url):
         return {'is_valid': False, 'cert': None, 'reason': str(e)}
 
 
-class Analyser:
+class Analyzer:
     def __init__(self, url, virus_total_token, google_safe_browsing_key):
         self.virus_total_token = virus_total_token
         self.google_safe_browsing_key = google_safe_browsing_key
@@ -141,7 +139,7 @@ class Analyser:
         return False
 
     def get_dga_score(self) -> float:
-        prob = get_prob(self.url, raw=True)
+        prob = 0
         return float(prob)
 
     def detect_at_symbol(self) -> bool:
@@ -823,7 +821,8 @@ class Analyser:
             subdomains = [s.strip() for s in subdomains if s.strip()]
             subdomains = self.get_links_and_ips(links=subdomains)
             return subdomains
-        except subprocess.CalledProcessError:
+        except Exception as e:
+            print(e)
             return []
 
     def find_suspicious_cookies(self):
@@ -951,7 +950,7 @@ class AnalyserOutputEncoder(json.JSONEncoder):
 
 def complete_output(url, VIRUS_TOTAL_KEY=None, GOOGLE_SAFE_BROWSING_KEY=None):
     t1 = datetime.datetime.now()
-    analyser = Analyser(url, VIRUS_TOTAL_KEY, GOOGLE_SAFE_BROWSING_KEY)
+    analyser = Analyzer(url, VIRUS_TOTAL_KEY, GOOGLE_SAFE_BROWSING_KEY)
     t2 = datetime.datetime.now()
     summery = analyser.get_summery()
     t3 = datetime.datetime.now()

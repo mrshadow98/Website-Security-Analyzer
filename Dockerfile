@@ -18,8 +18,6 @@ RUN mkdir /app
 WORKDIR /app
 RUN pip3 install --upgrade pip setuptools
 RUN python3 -m pip install --upgrade Pillow
-RUN pip3 install --upgrade https://storage.googleapis.com/tensorflow/mac/cpu/tensorflow-1.0.0-py3-none-any.whl
-RUN pip3 install dgaintel
 COPY ./req.txt /app/req.txt
 RUN pip3 install -r req.txt
 RUN apk add --no-cache libstdc++
@@ -27,9 +25,12 @@ RUN pip3 install pyopenssl --upgrade
 RUN pip3 install redis
 RUN pip3 install geoip2==4.6.0
 RUN pip3 install selenium==4.9.0
+RUN pip3 install ipwhois==1.2.0
 RUN apk del musl-dev wget git build-base linux-headers g++ gcc libffi-dev openssl-dev cargo
 COPY --from=golang:1.20.4-alpine /usr/local/go/ /usr/local/go/
 ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOPATH="$HOME/go"
+ENV PATH="$GOPATH/bin:$PATH"
 RUN go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 COPY . /app
 EXPOSE 5050
