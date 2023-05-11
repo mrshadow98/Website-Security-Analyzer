@@ -32,7 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
                   'phone_no',
                   'country_code',
                   'created_at',
-                  'avatar', 'is_email_verify', 'is_verify', 'is_referral_verify', 'active', 'admin', 'is_staff']
+                  'avatar', 'is_email_verify', 'is_verify', 'active', 'admin', 'is_staff']
 
 
 class GenerateOTPSerializer(serializers.ModelSerializer):

@@ -27,7 +27,7 @@ class UserManager(BaseUserManager):
         return user
 
     def create_new_user(self, phone_no, password, is_verify, country_code, email,
-                        full_name, application_id, tags, avatar,referral_code,is_referral_verify):
+                        full_name, application_id, tags, avatar):
         """
         Creates and saves a User with the given email and password.
         """
@@ -37,14 +37,12 @@ class UserManager(BaseUserManager):
         user = self.model(
             phone_no=phone_no,
             is_verify=is_verify,
-            is_referral_verify=is_referral_verify,
             country_code=country_code,
             email=email,
             username=full_name,
             application_id=application_id,
             tags=tags,
             avatar=avatar,
-            referral_code=referral_code,
         )
 
         user.set_password(password)
@@ -110,10 +108,6 @@ class User(AbstractBaseUser):
         verbose_name='is_verify',
         default=False
     )
-    is_referral_verify = models.BooleanField(
-        verbose_name='is_referral_verify',
-        default=False
-    )
     tags = models.CharField(
         verbose_name='tags',
         max_length=500,
@@ -135,7 +129,6 @@ class User(AbstractBaseUser):
     active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # a admin user; non super-user
     admin = models.BooleanField(default=False)  # a superuser
-    referral_code = models.CharField(max_length=255, blank=True, null=True)
     firebase_messaging_token = models.CharField(
         max_length=255,
         blank=True,

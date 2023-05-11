@@ -24,7 +24,7 @@ class UserAdmin(BaseUserAdmin):
         (None, {'fields': (
             'phone_no', 'password', 'username', 'email', 'application_id', 'tags', 'country_code',
             'is_verify', 'avatar', 'google_account',
-            'is_email_verify', 'firebase_messaging_token', 'is_referral_verify', 'referral_code')}),
+            'is_email_verify', 'firebase_messaging_token')}),
         ('Personal info', {'fields': ()}),
         ('Permissions', {'fields': ('admin', 'is_staff', 'active')}),
     )

@@ -367,13 +367,6 @@ def register(request):
                                  'message': 'We don\'t have any record with the number',
                                  'token': None})
 
-            ref_code = serializer.validated_data['referral_code']
-            admin_re_qs = AdminReferral.objects.filter(referral_code=ref_code,status=False)
-            if not admin_re_qs.exists():
-                return Response({'error': True, 'message': 'Incorrect Referral Code', 'token': None})
-            else:
-                admin_re_qs.update(status=True)
-  
             otp_object = GenerateOTP.objects.get(phone_no=serializer.validated_data['phone_no'])
             otp_object.verify_attempts = otp_object.verify_attempts - 1
             print('verify_attempt', otp_object.verify_attempts, otp_object.phone_no)
@@ -404,8 +397,7 @@ def register(request):
                                                         full_name=serializer.validated_data['uname'],
                                                         password=serializer.validated_data['password'],
                                                         application_id=serializer.validated_data['application_id'],
-                                                        tags=serializer.validated_data['tags'],
-                                                        referral_code = serializer.validated_data['referral_code'],
+                                                        tags=serializer.validated_data['tags']
                                                         )
 
             if access_token:
