@@ -1000,8 +1000,8 @@ if __name__ == "__main__":
     if url:
         parsed_url = urlparse(url)
         if parsed_url.scheme or parsed_url.scheme in ['http', 'https']:
-            vtk = "3b19a36f8cd10e8c28b201d6bf618b2c999f4dd5534fa5645aaa34dc54f22cfd"
-            gk = "AIzaSyCcYzRZroIZoq2qdW3tpiSZ3oTDFiRto4U"
+            vtk = "vtkkey"
+            gk = "gk"
             if args.get("vtk"):
                 vtk = args.get("vtk")
             if args.get("gsbk"):
