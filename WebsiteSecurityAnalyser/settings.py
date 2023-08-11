@@ -161,15 +161,15 @@ parent_dir = os.path.abspath(os.path.dirname(__file__) + '/..')
 
 
 # smtp data leapswitch
-EMAIL_HOST = 'mail.mails.geniobits.com'
+EMAIL_HOST = 'host'
 EMAIL_USE_TLS = True
-SERVER_EMAIL = 'casinoroll@mails.geniobits.com'
+SERVER_EMAIL = 'email@email.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'casinoroll@mails.geniobits.com'
-EMAIL_HOST_PASSWORD = 'tMMzc=$d#F;X'
+EMAIL_HOST_USER = 'user'
+EMAIL_HOST_PASSWORD = 'password'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-DEFAULT_FROM_EMAIL = 'casinoroll@mails.geniobits.com'
+DEFAULT_FROM_EMAIL = 'email@email.com'
 BASE_DOMAIN = "localhost"
 BASE_URL = "http://" + BASE_DOMAIN + "/"
 mimetypes.add_type("text/css", ".css", True)
